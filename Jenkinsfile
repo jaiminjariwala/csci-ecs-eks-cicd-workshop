@@ -1,6 +1,6 @@
 pipeline {
   agent any
-  options { timestamps(); disableConcurrentBuilds(); timeout(time: 35, unit: 'MINUTES'); buildDiscarder(logRotator(numToKeepStr: '10')) }
+  options { disableConcurrentBuilds(); timeout(time: 35, unit: 'MINUTES'); buildDiscarder(logRotator(numToKeepStr: '10')) }
   triggers { pollSCM('* * * * *') }
   environment { AWS_DEFAULT_REGION = 'us-east-1'; LAB_STACK = 'csci-ecs-eks-cicd'; AWS_PAGER = '' }
   stages {
