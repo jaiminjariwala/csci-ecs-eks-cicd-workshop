@@ -21,5 +21,13 @@ PY
 if ! pgrep -f 'python3 /opt/csci-cicd/preview/proxy.py' >/dev/null; then nohup python3 /opt/csci-cicd/preview/proxy.py > preview/proxy.log 2>&1 & fi
 docker exec csci-jenkins pkill -f '^kubectl -n workshop port-forward' || true
 docker exec -d -e KUBECONFIG=/var/jenkins_home/workspace/container-delivery/artifacts/kubeconfig csci-jenkins sh -c 'kubectl -n workshop port-forward --address 127.0.0.1 service/container-demo 18082:8080 > /tmp/preview-eks.log 2>&1'
-echo 'ECS private preview';for i in {1..10};do curl -fsS http://127.0.0.1:18081/api/info && break;sleep 2;done
-echo;echo 'EKS private preview';for i in {1..10};do curl -fsS http://127.0.0.1:18082/api/info && break;sleep 2;done
+wait_preview() {
+  for i in {1..30}; do
+    if curl -fsS --max-time 5 "http://127.0.0.1:$1/api/info"; then echo; return 0; fi
+    sleep 2
+  done
+  echo "Preview $1 did not become ready. Check deployment and tunnel logs." >&2
+  return 1
+}
+echo 'ECS private preview'; wait_preview 18081
+echo 'EKS private preview'; wait_preview 18082
