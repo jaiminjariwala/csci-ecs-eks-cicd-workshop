@@ -1,0 +1,1 @@
+{"version":"2.0.0","tasks":[{"label":"Test application","type":"shell","command":"python3 -m unittest discover -s tests -v","group":{"kind":"test","isDefault":true},"problemMatcher":[]},{"label":"Run locally","type":"shell","command":"python3 app/server.py","problemMatcher":[]},{"label":"Inspect Git changes","type":"shell","command":"git status && git diff","problemMatcher":[]}]}
