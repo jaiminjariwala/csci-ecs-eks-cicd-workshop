@@ -46,7 +46,11 @@ def eks():
     print(kube('apply','-f','-',input=json.dumps({'apiVersion':'v1','kind':'List','items':[doc,service]})))
     print(kube('rollout','status','deployment/'+SERVICE,'--timeout=180s'))
     pods=json.loads(kube('get','pods','-l','app='+SERVICE,'-o','json'))['items']
-    pod=next(x for x in pods if all(s.get('ready') for s in x.get('status',{}).get('containerStatuses',[])) and x.get('status',{}).get('containerStatuses'))
+    pod=next(x for x in pods if not x['metadata'].get('deletionTimestamp')
+             and x['spec']['containers'][0]['image']==v['image']
+             and x['metadata'].get('annotations',{}).get('workshop/source-commit')==v['commit']
+             and x.get('status',{}).get('containerStatuses')
+             and all(s.get('ready') for s in x['status']['containerStatuses']))
     result={'pod':pod['metadata']['name'],'image':pod['spec']['containers'][0]['image'],'imageID':pod['status']['containerStatuses'][0]['imageID'],'expected':v};save('eks',result);print(json.dumps(result,indent=2))
 def verify():
     c=config();v=load('image');e=load('ecs');k=load('eks');os.environ['KUBECONFIG']=str(A.absolute()/'kubeconfig')

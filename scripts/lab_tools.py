@@ -3,6 +3,7 @@
 import base64,io,json,os,pathlib,re,shlex,subprocess,sys,tarfile,time
 ROOT=pathlib.Path(__file__).resolve().parents[1];PRIVATE=ROOT/'.lab';PRIVATE.mkdir(exist_ok=True);os.chmod(PRIVATE,0o700)
 os.environ.setdefault('AWS_DEFAULT_REGION','us-east-1');os.environ['AWS_PAGER']=''
+os.environ['PATH']=str(PRIVATE/'bin')+os.pathsep+os.environ['PATH']
 if (PRIVATE/'credentials').exists():os.environ['AWS_SHARED_CREDENTIALS_FILE']=str(PRIVATE/'credentials')
 STACK='csci-ecs-eks-cicd'
 def aws(*a):
