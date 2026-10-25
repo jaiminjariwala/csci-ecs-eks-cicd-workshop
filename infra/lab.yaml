@@ -59,6 +59,20 @@ Resources:
   EcsCluster:
     Type: AWS::ECS::Cluster
     Properties: {ClusterName: csci-container-lab}
+  AuditBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: {SSEAlgorithm: AES256}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - {Id: ExpireLabReports, Status: Enabled, ExpirationInDays: 7}
   AppLogs:
     Type: AWS::Logs::LogGroup
     Properties: {LogGroupName: /csci/container-lab/ecs, RetentionInDays: 7}
@@ -105,3 +119,4 @@ Outputs:
   AppSecurityGroup: {Value: !Ref ApplicationSG}
   SubnetIds: {Value: !Join [',', !Ref SubnetIds]}
   LogGroup: {Value: !Ref AppLogs}
+  AuditBucket: {Value: !Ref AuditBucket}
