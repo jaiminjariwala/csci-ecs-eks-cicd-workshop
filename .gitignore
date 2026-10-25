@@ -7,3 +7,4 @@ __pycache__/
 artifacts/
 workshop-resources.env
 .DS_Store
+.lab/
