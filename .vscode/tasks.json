@@ -2,6 +2,21 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "0 Check workstation tools",
+      "type": "process",
+      "command": "python3",
+      "args": [
+        "scripts/check_tools.py"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "windows": {
+        "command": "python"
+      }
+    },
+    {
       "label": "1 Prepare Kubernetes namespace",
       "type": "process",
       "command": "python3",
@@ -16,6 +31,9 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated"
+      },
+      "windows": {
+        "command": "python"
       }
     },
     {
@@ -34,6 +52,9 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated"
+      },
+      "windows": {
+        "command": "python"
       }
     },
     {
@@ -52,6 +73,9 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated"
+      },
+      "windows": {
+        "command": "python"
       }
     },
     {
@@ -70,7 +94,10 @@
         "kind": "test",
         "isDefault": true
       },
-      "problemMatcher": []
+      "problemMatcher": [],
+      "windows": {
+        "command": "python"
+      }
     },
     {
       "label": "5 Refresh deployed app previews",
@@ -87,6 +114,9 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated"
+      },
+      "windows": {
+        "command": "python"
       }
     },
     {
@@ -105,6 +135,9 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated"
+      },
+      "windows": {
+        "command": "python"
       }
     },
     {
@@ -123,6 +156,9 @@
       "presentation": {
         "reveal": "always",
         "panel": "dedicated"
+      },
+      "windows": {
+        "command": "python"
       }
     },
     {
@@ -139,7 +175,10 @@
         }
       },
       "isBackground": true,
-      "problemMatcher": []
+      "problemMatcher": [],
+      "windows": {
+        "command": "python"
+      }
     }
   ],
   "inputs": [
