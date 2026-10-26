@@ -1,91 +1,93 @@
-# ECS and EKS CI/CD classroom workshop
+# ECS and EKS container delivery workshop
 
-Build one application in Jenkins and deploy the same immutable image to ECS Fargate and EKS. Use official Visual Studio Code for the local project, GitHub for review and CI, AWS Console for infrastructure, and Jenkins for delivery. `main` represents production **inside this disposable teaching lab**.
+This repository supports a hands-on workshop I conduct in **Cloud Computing** and **Database Management Systems II**. It demonstrates how one small web application can be developed in Visual Studio Code, reviewed through GitHub, built by Jenkins, and deployed to both Amazon ECS and Amazon EKS.
 
-## Before class
+The project makes the delivery process visible end to end: source code becomes a container image, the image is stored in Amazon ECR, and both platforms run the same verified image. The Cloud Computing extension also demonstrates recovery from an unhealthy release, scaling, and a private report in Amazon S3.
 
-Allow 45–60 minutes to prepare infrastructure; EKS creation is asynchronous. A 20-minute live presentation demonstrates an enhancement on a prepared baseline. Students build their own baseline outside that presentation window.
+## What the workshop demonstrates
 
-Install official VS Code, Git, Python 3.10+, AWS CLI v2, the AWS Session Manager plugin, and kubectl 1.35 from their official sources. In VS Code Extensions, install GitHub Pull Requests, GitHub Actions, and Kubernetes. GitHub sign-in for Source Control is required. This project has no Python package dependencies.
+- **GitHub first:** create a repository, commit the starter application, and use GitHub Actions to run its tests.
+- **A local enhancement:** create a branch in VS Code, add an ECS and EKS comparison API, run its tests, and review the change in a pull request.
+- **Automated delivery:** after the change is merged into `main`, Jenkins tests the source, builds a Docker image, pushes it to ECR, and deploys it to ECS and EKS.
+- **Platform comparison:** ECS runs the application as a Fargate service. EKS runs it in Kubernetes pods managed by a Deployment on an EC2 node group.
+- **Cloud Computing extension:** observe ECS circuit-breaker recovery and Kubernetes rollout undo, scale both platforms, and save a private encrypted JSON report in S3.
 
-Use your own Learner Lab in us-east-1. Its existing roles must include LabRole, LabInstanceProfile, LabEksClusterRole and LabEksNodeRole. Role names may have lab-generated prefixes. A different lab policy can prevent this build; confirm these prerequisites before the live class.
+## How the pieces fit together
 
-## First GitHub version using VS Code
+```mermaid
+flowchart LR
+    VS[VS Code and local Git] --> GH[GitHub repository and pull request]
+    GH --> CI[GitHub Actions tests]
+    GH --> J[Jenkins on a dedicated EC2 host]
+    J --> D[Docker builds one image]
+    D --> ECR[Amazon ECR]
+    ECR --> ECS[Amazon ECS with Fargate]
+    ECR --> EKS[Amazon EKS with managed EC2 nodes]
+    J --> V[Source and image verification]
+    J --> S3[Private S3 extension report]
+    SM[AWS Systems Manager] -. private tunnel .-> J
+```
 
-1. Extract the student starter folder and choose File > Open Folder in VS Code.
-2. Choose Source Control > Initialize Repository. Review files; `.lab`, credentials and build artifacts must stay excluded.
-3. Enter `Initial container workshop`, choose Commit, then Publish Branch > Publish to GitHub. Create your own private repository.
-4. Open GitHub Actions and wait for the test workflow to pass. This is CI; it does not deploy AWS resources.
+CloudFormation creates the workshop infrastructure from `infra/lab.yaml`. GitHub stores source and reviews changes. Jenkins runs on the EC2 host and uses that host’s Docker Engine to build the application image. ECR stores the image; it does not store the source repository.
 
-The instructor repository contains completed examples. Students should begin with the supplied 1.0.0 starter, not the completed enhancement.
+The Jenkins dashboard is served by Jenkins running in a Docker container on the EC2 host. Docker runs Jenkins and provides the image-building engine; it is not the dashboard application. AWS Systems Manager Session Manager carries a private tunnel from the local browser to the Jenkins page and the application previews, without opening public web ports for those services.
 
-## Create infrastructure in AWS Console
+ECS and EKS receive the same image. ECS uses an ECS task definition and service; EKS uses a Kubernetes Deployment and Service. The Jenkins verification checks the deployed source commit and image digest on both platforms, so the comparison is based on the actual releases rather than page appearance alone.
 
-1. In VPC, identify the default VPC and two public subnets in different Availability Zones with internet routes and automatic public IPv4 assignment.
-2. In IAM > Roles, copy the existing EKS cluster and node role ARNs. Do not create a replacement administrator role.
-3. Open CloudFormation > Create stack > With new resources > Upload a template file. Select `infra/lab.yaml`.
-4. Name the stack **csci-ecs-eks-cicd**. Select the VPC and both subnets. Enter your current public IPv4 address with `/32` as WorkstationCidr. Enter the two existing EKS role ARNs. Keep KubernetesVersion 1.35.
-5. Review resources and submit. Wait for CREATE_COMPLETE, then record Outputs. This creates Jenkins EC2, ECR, ECS cluster, EKS cluster/node group, logs, and a private encrypted audit bucket. The pipeline creates the application service and deployment later.
+## Recorded workshop execution
 
-The verified run initially created the stack through automation. A later AuditBucket-only update was performed and photographed through CloudFormation's interface. The screenshots do not imply that every initial creation click was executed through the console.
+The screenshots below come from the instructor’s recorded workshop execution. Your own AWS account, resource IDs, commit hashes, and build numbers will differ.
 
-## Connect VS Code to the lab and prepare Jenkins
+### The same application on ECS and EKS
 
-1. In Learner Lab choose AWS Details > AWS CLI. Copy the current temporary credential block into a local file named `.lab/credentials` using VS Code. Never commit it, photograph its values, or submit it. Refresh it after starting a new lab session.
-2. Choose Terminal > Run Task > **1 Prepare Kubernetes namespace**. Wait for `Workshop namespace is ready`.
-3. Choose Terminal > Run Task > **2 Prepare Jenkins** and enter your GitHub repository URL. The task runs the supplied setup through Systems Manager and creates a read-only repository key.
-4. Open `.lab/github-readonly.pub`. In your GitHub repository choose Settings > Deploy keys > Add deploy key. Paste only this PUBLIC key. Leave Allow write access off.
-5. AWS Console > Secrets Manager > **csci-jenkins-workshop** > Retrieve secret value contains the Jenkins username/password. Do not capture the value in screenshots.
-6. Choose Terminal > Run Task > **3 Open private Jenkins tunnel**. Keep it running and open http://127.0.0.1:18080. Sign in with the generated credentials.
-7. Open `container-delivery` > Build with Parameters. Keep CLOUD_EXTENSION off and choose Build. Read the stages and wait for SUCCESS.
+Both applications display the release information and platform identity from the running application.
 
-Jenkins controls Docker on this dedicated lab host through its Docker socket. Use this arrangement only for the disposable teaching host and trusted repository contributors. Jenkins can read only its repository deploy key; AWS access uses the existing instance profile. EKS edit access is limited to namespace `workshop`. No GitHub AWS access keys are needed.
+| Amazon ECS | Amazon EKS |
+| --- | --- |
+| ![Workshop application running on Amazon ECS](docs/images/ecs-application.jpg) | ![Workshop application running on Amazon EKS](docs/images/eks-application.jpg) |
 
-## Inspect the real baseline
+### GitHub review and Jenkins delivery
 
-Choose Terminal > Run Task > **5 Refresh deployed app previews**, then run **6 Open private ECS preview** and **7 Open private EKS preview** in separate task terminals. Keep the forwarding tasks open. Visit http://127.0.0.1:18081 and http://127.0.0.1:18082.
+The enhancement is reviewed and merged through a GitHub pull request. Jenkins then runs the delivery pipeline and records its verification artifacts.
 
-Both applications must display the expected release and commit. In Jenkins open the successful build > Artifacts > `verification.json`. A PASS requires the ECS/EKS application commits and actual image digests to match the image built from that commit. A green HTTP page alone is insufficient.
+![The workshop enhancement pull request merged in GitHub](docs/images/github-merged-pr.jpg)
 
-## Make and merge a local enhancement
+![Jenkins completed the final verified delivery build](docs/images/jenkins-success.jpg)
 
-1. In VS Code click the branch name > Create new branch. Enter `enhancement/platform-comparison`.
-2. Edit `app/release.json` to version 2.0.0 and change the message. Implement an observable enhancement in the local application; the completed example adds `/api/compare` and a platform comparison view.
-3. Choose Terminal > Run Task > **4 Test application**. All tests must pass. Use **Preview local enhancement** for the interface at http://127.0.0.1:18083.
-4. In Source Control review the diff, enter a commit message, choose Commit and Publish Branch.
-5. In GitHub choose Compare & pull request. Explain the change and test results. Review Files changed. Wait for all CI checks to pass, then Merge pull request > Confirm merge into `main`.
-6. Jenkins polls `main` once per minute and deploys the merged commit. Open its console, confirm SUCCESS, and refresh deployed previews using task 5 after rollout.
-7. Reopen both app pages and compare their commit with Jenkins `verification.json`. The local preview is development evidence; it does not prove deployment.
+### Inspecting the AWS deployments
 
-## Cloud Computing extension
+These console views show the ECS service and Kubernetes Deployment after the application was deployed.
 
-In Jenkins > Build with Parameters turn **CLOUD_EXTENSION** on and choose Build. This intentionally deploys an unhealthy configuration in the teaching application, observes EKS rollout failure and explicit undo, observes ECS deployment circuit breaker recovery, scales both to two running copies, restores one, verifies identity, and writes an encrypted JSON report to the private audit bucket. Allow time for recovery rather than rerunning builds repeatedly.
+| ECS service | Kubernetes Deployment |
+| --- | --- |
+| ![Amazon ECS service in the AWS Console](docs/images/ecs-service-console.jpg) | ![Amazon EKS Deployment in the AWS Console](docs/images/eks-deployment-console.jpg) |
 
-Inspect the console stages, `cloud-extension.json`, ECS service deployment events, EKS deployment status, and S3 report. Use this run's actual results when writing your comparison. Do not claim a performance winner from a small teaching sample.
+The Cloud Computing extension places its encrypted recovery report in the private S3 bucket created for this workshop.
 
-## Student submission
+![Private S3 recovery report properties](docs/images/s3-extension-report.jpg)
 
-Submit the initial GitHub commit, enhancement PR and successful CI, local VS Code diff/test evidence, Jenkins successful deployment, both application pages, matching source/digest verification, and a 500–750 word ECS/EKS comparison. Discuss task definitions versus Kubernetes resources, compute responsibilities, access, recovery, scaling, complexity and cost drivers. Cloud Computing students additionally submit the recovery/scaling report and its private S3 object evidence.
+## Repository layout
 
-Never submit credentials, Jenkins tokens, private SSH keys, or kubeconfig.
+| Path | Purpose |
+| --- | --- |
+| `app/` | Python web server, browser interface, and release metadata. |
+| `tests/` | Application behavior tests. |
+| `infra/lab.yaml` | CloudFormation template for the workshop AWS resources. |
+| `infra/` | Jenkins host setup and private application preview helpers. |
+| `Jenkinsfile` | Jenkins pipeline stages for testing, image build, deployment, and verification. |
+| `scripts/` | VS Code task helpers for checking tools, connecting to the lab, and observing deployments. |
+| `docs/images/` | Screenshots embedded in this README. |
 
-## Cleanup using interfaces
+## Release verification
 
-Preserve the evidence first. ECS > service > Update service: set desired tasks to zero, then delete this workshop service. EKS > cluster > Compute: delete the workshop node group (or let its CloudFormation stack deletion do that). In S3 empty only this workshop's audit bucket if deleting the stack. ECR: remove only workshop images if needed for repository deletion. CloudFormation > this stack > Delete. Review its events for DELETE_COMPLETE and resolve nonempty-resource errors. Delete the separately created `csci-jenkins-workshop` secret using its normal recovery window after it is no longer needed. Remove the workshop GitHub deploy key.
+In the recorded instructor run, Jenkins build 8 completed with status `PASS` for ECS and EKS. Both deployments reported the same source commit, `297992472c887759a8518d1a07e3c8cde00a97f7`, and image digest, `sha256:6f93f9f29efd743534b842846ea8e83605eaf45d00e6c0ae4cc3bd25c49c91ba`.
 
-These cleanup steps destroy disposable lab resources; use only your workshop names and retain evidence before confirming deletion. Do not touch earlier PostgreSQL or Elasticsearch resources. EKS control-plane charges continue even while worker EC2 instances are stopped, so stopping Learner Lab is not complete cleanup.
+The separate Cloud Computing recovery and scaling exercise completed in build 6. It recorded an EKS failed rollout followed by an explicit undo, ECS automatic circuit-breaker rollback, two running application copies on each platform during the scaling check, restoration to one copy, and a final health and identity check. Its report is separate from the final build 8 verification report.
 
-## Resume and troubleshooting
+## Main technologies
 
-Start Learner Lab, refresh `.lab/credentials`, and reopen the tunnel tasks. If a preview is stale after deployment, task 5 refreshes remote addresses. If localhost refuses the connection, check the corresponding task terminal and reopen its forwarding task. Do not open public ingress as a workaround.
-
-If Jenkins fails, read the first failing stage. The verified development history includes fixes for an optional Jenkins plugin, a missing Docker CLI in a minimal image, and selecting a terminating old EKS pod. The final scripts include these corrections; failed earlier builds remain visible in history.
-
-## Official references
-
-- https://docs.aws.amazon.com/AmazonECS/latest/developerguide/Welcome.html
-- https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html
-- https://docs.aws.amazon.com/eks/latest/userguide/access-entries.html
-- https://www.jenkins.io/doc/book/pipeline/jenkinsfile/
-- https://code.visualstudio.com/docs/sourcecontrol/github
-- https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html
+- [Amazon ECS](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/Welcome.html) and [Amazon EKS](https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html)
+- [Amazon ECR](https://docs.aws.amazon.com/AmazonECR/latest/userguide/what-is-ecr.html) and [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/Welcome.html)
+- [Jenkins Pipeline](https://www.jenkins.io/doc/book/pipeline/jenkinsfile/) and [GitHub Actions](https://docs.github.com/actions)
+- [AWS Systems Manager Session Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html)
+- [Visual Studio Code GitHub workflow](https://code.visualstudio.com/docs/sourcecontrol/github)
