@@ -30,6 +30,8 @@ flowchart LR
 
 CloudFormation creates the workshop infrastructure from `infra/lab.yaml`. GitHub stores source and reviews changes. Jenkins runs on the EC2 host and uses that host’s Docker Engine to build the application image. ECR stores the image; it does not store the source repository.
 
+VS Code task helpers are opened from the **Terminal** menu in the top menu bar: choose **Run Task…**, then select the named task. On macOS, Terminal is at the top of the screen immediately beside Run. The circular arrow in an existing task terminal reruns that task; it does not open the task list.
+
 The Jenkins dashboard is served by Jenkins running in a Docker container on the EC2 host. Docker runs Jenkins and provides the image-building engine; it is not the dashboard application. AWS Systems Manager Session Manager carries a private tunnel from the local browser to the Jenkins page and the application previews, without opening public web ports for those services.
 
 ECS and EKS receive the same image. ECS uses an ECS task definition and service; EKS uses a Kubernetes Deployment and Service. The Jenkins verification checks the deployed source commit and image digest on both platforms, so the comparison is based on the actual releases rather than page appearance alone.
