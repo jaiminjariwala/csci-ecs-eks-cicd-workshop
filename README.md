@@ -52,7 +52,7 @@ Both applications display the release information and platform identity from the
 
 The enhancement is reviewed and merged through a GitHub pull request. Jenkins then runs the delivery pipeline and records its verification artifacts.
 
-![The workshop enhancement pull request merged in GitHub](docs/images/github-merged-pr.jpg)
+The merged pull request records the review and merge step. The screenshot was removed because it displayed an instructor's personal GitHub profile image.
 
 ![Jenkins completed the final verified delivery build](docs/images/jenkins-success.jpg)
 
